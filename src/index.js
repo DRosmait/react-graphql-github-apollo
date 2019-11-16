@@ -15,8 +15,8 @@ import * as serviceWorker from './serviceWorker';
 const GITHUB_BASE_URL = 'https://api.github.com/graphql';
 
 const errorLink = onError(({ graphQLErrors, networkError }) => {
-    if (graphQLErrors) console.log(graphQLErrors);
-    if (networkError) console.log(networkError);
+    if (graphQLErrors) console.error(graphQLErrors);
+    if (networkError) console.error(networkError);
 });
 
 const httpLink = new HttpLink({
