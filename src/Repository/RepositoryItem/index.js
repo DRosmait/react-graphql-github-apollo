@@ -72,16 +72,30 @@ const updateStarCount = action => (client, { data }) => {
     });
 };
 
-const updateWatchersCount = (client, { data: { updateSubscription: { subscribable }}}) => {
-    const repository = client.readFragment({
-        id: `Repository:${subscribable.id}`,
-        fragment: REPOSITORY_FRAGMENT,
-    });
+const VIEWER_SUBSCRIBTIONS = {
+    SUBSCRIBED: 'SUBSCRIBED',
+    UNSUBSCRIBED: 'UNSUBSCRIBED',
+};
 
-    const totalCount = repository.watchers.totalCount + (subscribable.viewerSubscription === 'SUBSCRIBED' ? 1 : -1);
+const isWatch = viewerSubscription => viewerSubscription === VIEWER_SUBSCRIBTIONS.SUBSCRIBED;
+
+const updateWatch = (
+    client,
+    { 
+        data: {
+            updateSubscription: {
+                subscribable: { id, viewerSubscription }
+            },
+        },
+    },
+) => {
+    const repository = client.readFragment({ id: `Repository:${id}`, fragment: REPOSITORY_FRAGMENT });
+    let { totalCount } = repository.watchers;
+
+    totalCount = isWatch(viewerSubscription) ? totalCount + 1 : totalCount - 1;
 
     client.writeFragment({
-        id: `Repository:${subscribable.id}`,
+        id: `Repository:${id}`,
         fragment: REPOSITORY_FRAGMENT,
         data: {
             ...repository,
@@ -105,11 +119,54 @@ const RepositoryItem = ({
     viewerSubscription,
     viewerHasStarred,
 }) => {
-    const [ addStar ] = useMutation(STAR_REPOSITORY, { variables: { id }, update: updateStarCount('add') });
-    const [ removeStar ] = useMutation(UNSTAR_REPOSITORY, { variables: { id }, update: updateStarCount('remove') });
+    const [ addStar ] = useMutation(STAR_REPOSITORY, {
+        variables: { id },
+        optimisticResponse: {
+            addStar: {
+                __typename: 'Mutation',
+                starrable: {
+                    __typename: 'Repository',
+                    id,
+                    viewerHasStarred: true,
+                },
+            },
+        },
+        update: updateStarCount('add'),
+    });
+    const [ removeStar ] = useMutation(UNSTAR_REPOSITORY, {
+        variables: { id },
+        optimisticResponse: {
+            removeStar: {
+                __typename: 'Mutation',
+                starrable: {
+                    __typename: 'Repository',
+                    id,
+                    viewerHasStarred: false,
+                },
+            },
+        },
+        update: updateStarCount('remove'),
+    });
 
-    const viewerSubscriptionNext = viewerSubscription === 'SUBSCRIBED' ? 'UNSUBSCRIBED' : 'SUBSCRIBED';
-    const [ toggleSubscription ] = useMutation(TOGGLE_SUBSCRIPTION_OFF_REPOSITORY, { variables: { id, state: viewerSubscriptionNext }, update: updateWatchersCount });
+    const [ toggleSubscription ] = useMutation(TOGGLE_SUBSCRIPTION_OFF_REPOSITORY, {
+        variables: { 
+            id, 
+            state: isWatch(viewerSubscription) ? VIEWER_SUBSCRIBTIONS.UNSUBSCRIBED : VIEWER_SUBSCRIBTIONS.SUBSCRIBED,
+        },
+        optimisticResponse: {
+            updateSubscription: {
+                __typename: 'Mutation',
+                subscribable: {
+                    __typename: 'Repository',
+                    id,
+                    viewerSubscription: isWatch(viewerSubscription)
+                        ? VIEWER_SUBSCRIBTIONS.UNSUBSCRIBED
+                        : VIEWER_SUBSCRIBTIONS.SUBSCRIBED,
+                },
+            },
+        },
+        update: updateWatch,
+    });
     
     return (
         <div>
@@ -152,7 +209,9 @@ const RepositoryItem = ({
                 className="RepositoryItem-title-action"
                 onClick={toggleSubscription}
             >
-                {viewerSubscriptionNext.slice(0, viewerSubscriptionNext.length - 1)}
+                {watchers.totalCount}
+                {' '}
+                {isWatch(viewerSubscription) ? 'Unwatch' : 'Watch'}
             </Button>
         </div>
     );
