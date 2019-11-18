@@ -29,10 +29,12 @@ const withIssuesWrapper = Component => props => <div className="Issues"><Compone
 
 const Issues = ({ repositoryName, repositoryOwner }) => {
     const { data: { repository } = {}, loading, error } = useQuery(GET_ISSUES_OF_REPOSITORY, { variables: { repositoryOwner, repositoryName }});
+
+    console.log(repository);
     
     if (error) return <ErrorMessage error={error} />;
     if (loading && !repository) return <Loading />;
-    if (!repository.issues.edges.lenght) return <div className="IssueList">No issues ...</div>;
+    if (!repository.issues.edges.length) return <div className="IssueList">No issues ...</div>;
 
     return <IssueList issues={repository.issues} />;
 };
