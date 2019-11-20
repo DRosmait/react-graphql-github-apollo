@@ -32,6 +32,7 @@ const RepositoryList = ({ repositories, fetchMore, loading, entry }) => (
                 <Issues
                     repositoryName={node.name}
                     repositoryOwner={node.owner.login}
+                    wrapperClassName="Issues"
                 />
             </div>
         ))}

@@ -7,6 +7,7 @@ import Loading from '../../Loading';
 import ErrorMessage from '../../Error';
 import { ButtonUnobtrusive } from '../../Button';
 import FetchMore from '../../FetchMore';
+import { withWrapper } from '../../helpers/hoc';
 
 import ISSUE_FRAGMENT from '../fragments';
 
@@ -18,11 +19,18 @@ const GET_ISSUES_OF_REPOSITORY = gql`
         $cursor: String
     ) {
         repository(
-            name: $repositoryName, owner: $repositoryOwner) {
-            issues(first: 5, states: [$issueState], after: $cursor) {
+            name: $repositoryName,
+            owner: $repositoryOwner
+        ) {
+            issues(
+                first: 5,
+                states: [$issueState],
+                after: $cursor
+            ) {
                 edges {
                     node {
                         ...issue
+                        number
                     }
                 }
                 pageInfo {
@@ -55,8 +63,6 @@ const TRANSITION_STATE = {
 };
 
 const isShow = issueState => issueState !== ISSUE_STATES.NONE;
-
-const withIssuesWrapper = Component => props => <div className="Issues"><Component {...props} /></div>;
 
 const updateQuery = (prevResult, { fetchMoreResult }) => {
     if (!fetchMoreResult) return prevResult;
@@ -168,7 +174,12 @@ const IssueList = ({
 }) => (
     <div className="IssueList" >
         {issues.edges.map(({ node }) => (
-            <IssueItem key={node.id} issue={node} />
+            <IssueItem
+                key={node.id}
+                issue={node}
+                repositoryName={repositoryName}
+                repositoryOwner={repositoryOwner}
+            />
         ))}
 
         <FetchMore
@@ -188,4 +199,4 @@ const IssueList = ({
     </div>
 );
 
-export default withIssuesWrapper(Issues);
+export default withWrapper(Issues);
