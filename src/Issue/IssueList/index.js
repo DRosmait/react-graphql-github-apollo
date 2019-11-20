@@ -76,7 +76,7 @@ const updateQuery = (prevResult, { fetchMoreResult }) => {
 
 const Issues = ({ repositoryName, repositoryOwner }) => {
     const [issueState, setIssueState] = useState(ISSUE_STATES.NONE);
-    const { data: { repository } = {}, loading, error, fetchMore } = useQuery(GET_ISSUES_OF_REPOSITORY, {
+    const { data: { repository } = {}, loading, error, fetchMore, client } = useQuery(GET_ISSUES_OF_REPOSITORY, {
         variables: {
             repositoryOwner,
             repositoryName,
@@ -92,11 +92,13 @@ const Issues = ({ repositoryName, repositoryOwner }) => {
 
     return (
         <>
-            <ButtonUnobtrusive
-                onClick={() => onChangeIssueState(TRANSITION_STATE[issueState])}
-            >
-                {TRANSITION_LABELS[issueState]}
-            </ButtonUnobtrusive>
+            <IssueFilter
+                issueState={issueState}
+                onChangeIssueState={onChangeIssueState}
+                repositoryName={repositoryName}
+                repositoryOwner={repositoryOwner}
+                client={client}
+            />
             {
                 !repository ? null :
                     !repository.issues.edges.length
@@ -114,6 +116,46 @@ const Issues = ({ repositoryName, repositoryOwner }) => {
         </>
     );
 };
+
+const prefetchIssues = ({
+    client,
+    repositoryName,
+    repositoryOwner,
+    issueState,
+}) => {
+    const nextState = TRANSITION_STATE[issueState];
+
+    if (isShow(nextState)) {
+        client.query({
+            query: GET_ISSUES_OF_REPOSITORY,
+            variables: {
+                repositoryName,
+                repositoryOwner,
+                issueState: nextState,
+            },
+        });
+    }
+}
+
+const IssueFilter = ({
+    issueState,
+    onChangeIssueState,
+    repositoryOwner,
+    repositoryName,
+    client,
+}) => (
+    <ButtonUnobtrusive
+        onClick={() => onChangeIssueState(TRANSITION_STATE[issueState])}
+        onMouseOver={() => prefetchIssues({
+            client,
+            repositoryOwner,
+            repositoryName,
+            issueState,
+        })}
+    >
+        {TRANSITION_LABELS[issueState]}
+    </ButtonUnobtrusive>
+);
 
 const IssueList = ({
     issues,
