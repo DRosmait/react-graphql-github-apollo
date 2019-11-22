@@ -23,7 +23,7 @@ const GET_COMMENTS_OF_ISSUE = gql`
             id
             issue(number: $issueNumber) {
                 id
-                comments(first: 2, after: $cursor) {
+                comments(last: 2, before: $cursor) {
                     edges {
                         node {
                             id
@@ -36,8 +36,8 @@ const GET_COMMENTS_OF_ISSUE = gql`
                         }
                     }
                     pageInfo {
-                        endCursor
-                        hasNextPage
+                        startCursor
+                        hasPreviousPage
                     }
                 }
             }
@@ -59,7 +59,7 @@ const updateQuery = (prevResult, { fetchMoreResult }) => {
                 comments: {
                     ...prevResult.repository.issue.comments,
                     ...fetchMoreResult.repository.issue.comments,
-                    edges: [ ...prevResult.repository.issue.comments.edges, ...fetchMoreResult.repository.issue.comments.edges ],
+                    edges: [...fetchMoreResult.repository.issue.comments.edges, ...prevResult.repository.issue.comments.edges],
                 },
             },
         },
@@ -72,7 +72,7 @@ const prefetchIssues = ({
     repositoryOwner,
     issueNumber,
     cursor,
-}) => client.query({ query: GET_COMMENTS_OF_ISSUE, variables: { repositoryName, repositoryOwner, issueNumber, cursor }});
+}) => client.query({ query: GET_COMMENTS_OF_ISSUE, variables: { repositoryName, repositoryOwner, issueNumber, cursor } });
 
 const Comments = ({ repositoryName, repositoryOwner, issueNumber }) => {
     const [
@@ -104,13 +104,13 @@ const Comments = ({ repositoryName, repositoryOwner, issueNumber }) => {
         const comments = repository.issue.comments;
         const pageInfo = comments.pageInfo;
 
-        content = comments.edges.length 
+        content = comments.edges.length
             ? <CommentListWrapper
                 comments={comments}
                 loading={loading}
-                hasNextPage={pageInfo.hasNextPage}
+                hasPreviousPage={pageInfo.hasPreviousPage}
                 fetchMore={fetchMore}
-                variables={{ repositoryName, repositoryOwner, issueNumber, cursor: pageInfo.endCursor }}
+                variables={{ repositoryName, repositoryOwner, issueNumber, cursor: pageInfo.startCursor }}
                 updateQuery={updateQuery}
             /> : <div className="CommentItem">No comment ...</div>;
     }
@@ -121,9 +121,9 @@ const Comments = ({ repositoryName, repositoryOwner, issueNumber }) => {
                 onClick={onCommentStateChange}
                 onMouseOver={() => prefetchIssues({ client, repositoryName, repositoryOwner, issueNumber })}
             >
-                { isShow(commentState) ? 'Hide' : 'Show' } Comments
+                {isShow(commentState) ? 'Hide' : 'Show'} Comments
             </ButtonUnobtrusive>
-            { isShow(commentState) && content }
+            {isShow(commentState) && content}
         </>
     );
 };
@@ -131,27 +131,28 @@ const Comments = ({ repositoryName, repositoryOwner, issueNumber }) => {
 const CommentListWrapper = ({
     comments,
     loading,
-    hasNextPage,
+    hasPreviousPage,
     fetchMore,
     variables,
     updateQuery,
 }) => (
-    <div className="CommentList-Wrapper">
-        <CommentList comments={comments} />
+        <div className="CommentList-Wrapper">
+            <FetchMore
+                loading={loading}
+                hasPage={hasPreviousPage}
+                fetchMore={fetchMore}
+                variables={variables}
+                updateQuery={updateQuery}
+            />
 
-        <FetchMore
-            loading={loading}
-            hasNextPage={hasNextPage}
-            fetchMore={fetchMore}
-            variables={variables}
-            updateQuery={updateQuery}
-        />
-    </div>
-);
+
+            <CommentList comments={comments} />
+        </div>
+    );
 
 const CommentList = ({ comments }) => (
     <ul className="CommentList" >
-        { comments.edges.map(({ node }) => <CommentItem key={node.id} comment={node} />) }
+        {comments.edges.map(({ node }) => <CommentItem key={node.id} comment={node} />)}
     </ul>
 );
 
