@@ -91,6 +91,7 @@ const Issues = ({ repositoryName, repositoryOwner }) => {
         skip: !isShow(issueState),
         notifyOnNetworkStatusChange: true,
     });
+
     const onChangeIssueState = nextIssueState => setIssueState(nextIssueState);
 
     if (error) return <ErrorMessage error={error} />;
@@ -184,7 +185,7 @@ const IssueList = ({
 
         <FetchMore
             loading={loading}
-            hasNextPage={issues.pageInfo.hasNextPage}
+            hasPage={issues.pageInfo.hasNextPage}
             fetchMore={fetchMore}
             variables={{
                 cursor: issues.pageInfo.endCursor,

@@ -5,7 +5,7 @@ import Loading from '../Loading';
 
 const FetchMore = ({
     loading,
-    hasNextPage,
+    hasPage,
     fetchMore,
     variables,
     updateQuery,
@@ -14,7 +14,7 @@ const FetchMore = ({
     loading
         ? (<Loading />)
         : (
-            hasNextPage && (
+            hasPage && (
                 <ButtonUnobtrusive
                     className='FetchMore-button'
                     onClick={() => fetchMore({ variables, updateQuery })}

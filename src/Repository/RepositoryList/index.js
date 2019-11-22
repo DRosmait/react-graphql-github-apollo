@@ -39,7 +39,7 @@ const RepositoryList = ({ repositories, fetchMore, loading, entry }) => (
 
         <FetchMore
             loading={loading}
-            hasNextPage={repositories.pageInfo.hasNextPage}
+            hasPage={repositories.pageInfo.hasNextPage}
             fetchMore={fetchMore}
             variables={{ cursor: repositories.pageInfo.endCursor }}
             updateQuery={updateQuery(entry)}
